@@ -1,12 +1,23 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { Compass, PenLine, Plus, Settings, Shield, UserRound, Users } from 'lucide-react'
+import {
+  Compass,
+  GraduationCap,
+  Library,
+  PenLine,
+  Plus,
+  Settings,
+  Shield,
+  UserRound,
+  Users,
+} from 'lucide-react'
 import { isLocale } from '@/i18n/config'
 import { getDictionary, format } from '@/i18n/dictionaries'
 import { formatDate, formatNumber, formatRelative } from '@/shared/utils/format'
 import { progressToNextLevel } from '@/shared/utils/level'
 import { getSessionUser } from '@/modules/identity/session'
+import { canAuthorLearning } from '@/modules/identity/authorization'
 import {
   getUserCommunities,
   getUserContributionStats,
@@ -250,6 +261,23 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
                 icon={<Compass className="h-4 w-4" aria-hidden="true" />}
                 label={dict.dashboard.browseCommunities}
               />
+              <QuickLink
+                href={`/${locale}/courses`}
+                icon={<GraduationCap className="h-4 w-4" aria-hidden="true" />}
+                label={dict.courses.title}
+              />
+              <QuickLink
+                href={`/${locale}/library`}
+                icon={<Library className="h-4 w-4" aria-hidden="true" />}
+                label={dict.library.title}
+              />
+              {canAuthorLearning(viewer) ? (
+                <QuickLink
+                  href={`/${locale}/studio`}
+                  icon={<PenLine className="h-4 w-4" aria-hidden="true" />}
+                  label={dict.studio.title}
+                />
+              ) : null}
               {viewer.role === 'admin' ? (
                 <QuickLink
                   href={`/${locale}/admin`}

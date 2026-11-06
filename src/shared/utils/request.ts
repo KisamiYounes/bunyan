@@ -13,7 +13,11 @@ export function assertObjectId(
     | 'COMMUNITY_NOT_FOUND'
     | 'POST_NOT_FOUND'
     | 'USER_NOT_FOUND'
-    | 'REPORT_NOT_FOUND' = 'NOT_FOUND',
+    | 'REPORT_NOT_FOUND'
+    | 'COURSE_NOT_FOUND'
+    | 'LESSON_NOT_FOUND'
+    | 'PUBLICATION_NOT_FOUND'
+    | 'CHAPTER_NOT_FOUND' = 'NOT_FOUND',
 ): void {
   if (!/^[a-f\d]{24}$/i.test(value)) throw new AppError(code)
 }

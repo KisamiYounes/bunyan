@@ -133,46 +133,198 @@ The unique key is the anti-exploitation mechanism: replaying the same action can
 Points per kind are constants in the gamification module; client input is ignored.
 Level is derived: `floor(sqrt(xp / 50)) + 1`, capped for display at 99.
 
-### `achievements` (Phase 2)
+### `achievements` (not created yet)
 
-`{ code, nameKey, descriptionKey, criteria }` and `user_achievements`
+Reserved for Phase 3: `{ code, nameKey, descriptionKey, criteria }` and `user_achievements`
 `{ userId, achievementCode, awardedAt, evidenceRef }` unique `{ userId, achievementCode }`.
 
-## 4. Reserved for later phases (not created yet)
+## 4. Learning
 
-- Learning: `courses`, `modules`, `lessons`, `learning_pathways`, `enrollments`,
-  `lesson_progress` — all tenant/course scoped with unique `{ courseId, userId, lessonId }`.
-- Library: `publications`, `chapters`, `reading_progress`, `bookmarks`.
+Courses, modules, lessons and enrollment records are **author-owned resources**, not tenant-scoped
+community content. Access to drafts is derived from `authorId` plus platform role.
+
+### `courses`
+
+| Field                     | Type             | Notes                                        |
+| ------------------------- | ---------------- | -------------------------------------------- |
+| `authorId`                | ObjectId → users | active adult educator or admin               |
+| `title`                   | string           | 3–140                                        |
+| `slug`                    | string           | unique, URL-safe, lowercase                  |
+| `summary`                 | string           | max 400                                      |
+| `description`             | string           | max 8000, plain text                         |
+| `topic`                   | enum?            | discipline tag from the shared `TOPICS` list |
+| `language`                | enum             | `ar` \| `en` \| `fr`                         |
+| `level`                   | enum             | `beginner` \| `intermediate` \| `advanced`   |
+| `status`                  | enum             | `draft` \| `published` \| `archived`         |
+| `lessonCount`             | number           | recomputed from `lessons`                    |
+| `enrollmentCount`         | number           | incremented exactly once per enrollment      |
+| `publishedAt`             | Date?            | set on first publish                         |
+| `createdAt` / `updatedAt` | Date             |                                              |
+
+Indexes: `{ slug: 1 }` unique, `{ status: 1, publishedAt: -1 }`,
+`{ authorId: 1, status: 1, updatedAt: -1 }`, `{ topic: 1, status: 1 }`.
+
+### `coursemodules`
+
+`{ courseId, title (2–140), summary? (max 600), position, createdAt, updatedAt }`.
+Index: `{ courseId: 1, position: 1 }`. Modules are appended; the position is the current module count
+at creation time.
+
+### `lessons`
+
+`{ courseId, moduleId, title (2–180), content (1–60000, plain text), position, estimatedMinutes
+(1–600), createdAt, updatedAt }`.
+Indexes: `{ courseId: 1, position: 1 }`, `{ moduleId: 1, position: 1 }`.
+
+Lessons have **no per-lesson status**. The parent course status gates learner access. Deleting a
+lesson also deletes its `lessonprogresses` rows and recomputes `courses.lessonCount`.
+
+### `enrollments`
+
+| Field                  | Type                | Notes                                  |
+| ---------------------- | ------------------- | -------------------------------------- |
+| `userId`               | ObjectId → users    |                                        |
+| `courseId`             | ObjectId → courses  |                                        |
+| `status`               | enum                | `active` \| `completed`                |
+| `completedLessonCount` | number              | recomputed from `lessonprogresses`     |
+| `lastLessonId`         | ObjectId? → lessons | most recently completed lesson         |
+| `lastAccessedAt`       | Date                | updated on enrollment and completion   |
+| `completedAt`          | Date?               | set when the final lesson is completed |
+
+Indexes: **unique** `{ userId: 1, courseId: 1 }`, `{ courseId: 1, status: 1 }`,
+`{ userId: 1, updatedAt: -1 }`.
+
+Only published courses accept new enrollments. The unique key makes double enrollment impossible
+even under concurrent requests.
+
+### `lessonprogresses`
+
+`{ userId, courseId, lessonId, completedAt }` with **unique** `{ userId, lessonId }` and
+`{ userId, courseId, completedAt }`.
+
+One row means “this learner completed this lesson”. The row is immutable; replaying completion finds
+the existing row, awards no new XP, and recomputes the same counts.
+
+## 5. Library
+
+### `publications`
+
+| Field                     | Type             | Notes                                |
+| ------------------------- | ---------------- | ------------------------------------ |
+| `authorId`                | ObjectId → users | active adult educator or admin       |
+| `title`                   | string           | 3–160                                |
+| `slug`                    | string           | unique, URL-safe, lowercase          |
+| `summary`                 | string           | max 400                              |
+| `description`             | string           | max 8000, plain text                 |
+| `topic`                   | enum?            | discipline tag                       |
+| `language`                | enum             | `ar` \| `en` \| `fr`                 |
+| `status`                  | enum             | `draft` \| `published` \| `archived` |
+| `chapterCount`            | number           | number of **published** chapters     |
+| `publishedAt`             | Date?            | set on first publish                 |
+| `createdAt` / `updatedAt` | Date             |                                      |
+
+Indexes: `{ slug: 1 }` unique, `{ status: 1, publishedAt: -1 }`,
+`{ authorId: 1, status: 1, updatedAt: -1 }`.
+
+Publishing requires at least one published chapter. Draft publications are visible only to their
+author and platform admins.
+
+### `chapters`
+
+`{ publicationId, title (2–180), content (1–80000, plain text), position, status, publishedAt?,
+createdAt, updatedAt }` where `status` is `draft` | `published`.
+
+Indexes: `{ publicationId: 1, position: 1 }`, `{ publicationId: 1, status: 1, position: 1 }`.
+
+Readers only receive chapters with `status: 'published'`. Each chapter is independently publishable
+and unpublishable; `publications.chapterCount` is recomputed from published chapters.
+
+### `readingprogresses`
+
+| Field           | Type                    | Notes                                     |
+| --------------- | ----------------------- | ----------------------------------------- |
+| `userId`        | ObjectId → users        |                                           |
+| `publicationId` | ObjectId → publications |                                           |
+| `lastChapterId` | ObjectId → chapters     | last chapter the reader was on            |
+| `scroll`        | number                  | fraction scrolled within the chapter, 0–1 |
+| `updatedAt`     | Date                    |                                           |
+
+Indexes: **unique** `{ userId: 1, publicationId: 1 }`, `{ userId: 1, updatedAt: -1 }`.
+
+The reader restores both the chapter and the scroll fraction. Progress can only target published
+chapters unless the caller is the author or an admin. Deleting the referenced chapter resets the
+stored scroll fraction to `0`.
+
+### `bookmarks`
+
+`{ userId, targetType, targetId, createdAt }` where `targetType` is `course` | `publication`.
+
+Indexes: **unique** `{ userId: 1, targetType: 1, targetId: 1 }`, `{ userId: 1, createdAt: -1 }`.
+
+Toggling inserts or deletes exactly one row. Draft targets can only be bookmarked by their author or
+an admin.
+
+### `follows`
+
+`{ followerId, targetType, targetId, createdAt }` where `targetType` is `user` | `course` |
+`publication`.
+
+Indexes: **unique** `{ followerId: 1, targetType: 1, targetId: 1 }`,
+`{ targetType: 1, targetId: 1, createdAt: -1 }`.
+
+Self-follows are rejected before insert. Only active users can be followed.
+
+## 6. Reserved for later phases (not created yet)
+
+- Learning: `learning_pathways` connecting courses, publications, projects and assessments.
 - Practice: `assignments`, `submissions`, `reviews`.
 - Assessment: `quizzes`, `questions`, `attempts`, `competency_evidence`.
 - Academies: `academies`, `academy_memberships`, `programs`, `cohorts`.
+- Operations: `notifications`, `email_verification_tokens`, `password_reset_tokens`.
 
 They are intentionally not scaffolded until their module is implemented (no empty migrations).
 
-## 5. Relationship overview
+## 7. Relationship overview
 
 ```
 User 1──* Membership *──1 Community 1──* Post 1──* Comment
   │                              │              └──* PostLike
   │                              └──* Membership (owner/moderator/member)
-  └──* XpEvent
+  ├──* XpEvent
+  ├──* Enrollment *──1 Course 1──* CourseModule 1──* Lesson
+  ├──* LessonProgress *──1 Lesson
+  ├──* ReadingProgress *──1 Publication 1──* Chapter
+  ├──* Bookmark (course | publication)
+  └──* Follow (user | course | publication)
+
 Community *──1 Academy (future, nullable)
 ```
 
-## 6. Consistency and counters
+## 8. Consistency and counters
 
 - `memberCount` changes only on membership state transitions (`active` ↔ `left`/`banned`,
   `pending` → `active`), in the same service transaction-equivalent flow.
 - `postCount` increments on publish and decrements on moderation removal.
 - `likeCount` / `commentCount` follow the same rule.
+- `courses.lessonCount` is recomputed after module/lesson creation or deletion and used to mark
+  enrollments `completed` when the completed count reaches it.
+- `courses.enrollmentCount` increments exactly once per enrollment; there is no unenroll flow yet.
+- `publications.chapterCount` counts published chapters and is recomputed when chapter status changes
+  or a chapter is deleted.
+- `enrollments.completedLessonCount` and `status` are recomputed from immutable lesson-progress rows
+  after each completion.
 - MongoDB single-document updates are atomic; multi-document flows use guarded updates
   (`findOneAndUpdate` with the expected previous state) and are idempotent under retry.
-- A periodic reconciliation job is a Phase 2 hardening task.
+- A periodic reconciliation job remains a hardening task.
 
-## 7. Data lifecycle
+## 9. Data lifecycle
 
 - Account deletion: anonymize profile, keep authored public content attributed to
   "Deleted account" unless legally required otherwise; remove likes and memberships.
-- Moderation: `status: removed` hides content from reads but preserves audit trail.
+- Learning content: archiving a course or publication hides it from catalogues and blocks reader
+  access; enrollment and reading-progress rows are retained, so republishing restores the history.
+  Hard deletion of courses or publications is not exposed in the UI.
+- Lesson deletion removes that lesson's progress rows and recomputes enrollment completion.
+- Chapter deletion resets affected reading positions to the start of the stored chapter.
 - Backups: Atlas automated backups in production; local `mongodump` documented in README.
-- PII minimization: no national IDs, phone numbers or precise birth dates in Phase 1.
+- PII minimization: no national IDs, phone numbers or precise birth dates in Phases 1–2.

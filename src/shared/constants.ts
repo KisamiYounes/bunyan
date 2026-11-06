@@ -70,12 +70,44 @@ export type XpKind = keyof typeof XP_POINTS
 export const LEVEL_STEP = 50
 export const MAX_LEVEL = 99
 
+export const COURSE_LEVELS = ['beginner', 'intermediate', 'advanced'] as const
+export type CourseLevel = (typeof COURSE_LEVELS)[number]
+
+export const COURSE_STATUSES = ['draft', 'published', 'archived'] as const
+export type CourseStatus = (typeof COURSE_STATUSES)[number]
+
+export const ENROLLMENT_STATUSES = ['active', 'completed'] as const
+export type EnrollmentStatus = (typeof ENROLLMENT_STATUSES)[number]
+
+export const PUBLICATION_STATUSES = ['draft', 'published', 'archived'] as const
+export type PublicationStatus = (typeof PUBLICATION_STATUSES)[number]
+
+export const CHAPTER_STATUSES = ['draft', 'published'] as const
+export type ChapterStatus = (typeof CHAPTER_STATUSES)[number]
+
+export const BOOKMARK_TARGET_TYPES = ['course', 'publication'] as const
+export type BookmarkTargetType = (typeof BOOKMARK_TARGET_TYPES)[number]
+
+export const FOLLOW_TARGET_TYPES = ['user', 'course', 'publication'] as const
+export type FollowTargetType = (typeof FOLLOW_TARGET_TYPES)[number]
+
 export const PAGE_SIZE = 12
 export const MAX_PAGE_SIZE = 50
 export const MAX_POST_LENGTH = 10_000
 export const MAX_COMMENT_LENGTH = 3_000
 export const MAX_BIO_LENGTH = 600
 export const MAX_COMMUNITY_DESCRIPTION = 1_000
+export const MAX_COURSE_TITLE = 140
+export const MAX_COURSE_SUMMARY = 400
+export const MAX_COURSE_DESCRIPTION = 8_000
+export const MAX_MODULE_TITLE = 140
+export const MAX_LESSON_TITLE = 180
+export const MAX_LESSON_CONTENT = 60_000
+export const MAX_PUBLICATION_TITLE = 160
+export const MAX_PUBLICATION_SUMMARY = 400
+export const MAX_PUBLICATION_DESCRIPTION = 8_000
+export const MAX_CHAPTER_TITLE = 180
+export const MAX_CHAPTER_CONTENT = 80_000
 
 export const RATE_LIMITS = {
   register: { limit: 5, windowMs: 60 * 60 * 1000 },
@@ -85,4 +117,7 @@ export const RATE_LIMITS = {
   comment: { limit: 20, windowMs: 10 * 60 * 1000 },
   report: { limit: 10, windowMs: 60 * 60 * 1000 },
   membership: { limit: 30, windowMs: 60 * 60 * 1000 },
+  learning: { limit: 40, windowMs: 60 * 60 * 1000 },
+  progress: { limit: 240, windowMs: 10 * 60 * 1000 },
+  library: { limit: 120, windowMs: 10 * 60 * 1000 },
 } as const

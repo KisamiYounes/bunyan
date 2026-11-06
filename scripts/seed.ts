@@ -6,6 +6,11 @@ import { CommunityModel } from '../src/modules/communities/community.model'
 import { MembershipModel } from '../src/modules/communities/membership.model'
 import { PostModel } from '../src/modules/communities/post.model'
 import { CommentModel } from '../src/modules/communities/comment.model'
+import { CourseModel } from '../src/modules/learning/course.model'
+import { CourseModuleModel } from '../src/modules/learning/course-module.model'
+import { LessonModel } from '../src/modules/learning/lesson.model'
+import { PublicationModel } from '../src/modules/learning/publication.model'
+import { ChapterModel } from '../src/modules/learning/chapter.model'
 import { hashPassword } from '../src/modules/identity/password'
 import { levelForXp } from '../src/shared/utils/level'
 
@@ -124,6 +129,91 @@ const comments = [
   },
 ]
 
+interface SeedLesson {
+  title: string
+  content: string
+  estimatedMinutes: number
+}
+
+interface SeedModule {
+  title: string
+  summary: string
+  lessons: SeedLesson[]
+}
+
+const demoCourse = {
+  slug: 'effective-learning-foundations',
+  author: 'sara@bunyan.local',
+  title: 'أساسيات التعلّم الفعّال',
+  summary: 'مسار قصير يشرح كيف يتعلّم الإنسان فعلًا، ويحوّل الدراسة من حفظ إلى فهم وتطبيق.',
+  description:
+    'هذا مسار تمهيدي للمتعلّمين الذين يريدون بناء عادة تعلّم مستدامة. يبدأ من طريقة عمل الذاكرة، ثم ينتقل إلى التخطيط الأسبوعي، وينتهي بتقنية المراجعة المتباعدة. كل درس يحتوي شرحًا موجزًا وتمرينًا عمليًا يمكن تنفيذه في اليوم نفسه.',
+  topic: 'personal' as const,
+  level: 'beginner' as const,
+  modules: [
+    {
+      title: 'كيف يتعلّم العقل؟',
+      summary: 'أساسيات الذاكرة والانتباه قبل أي تقنية دراسية.',
+      lessons: [
+        {
+          title: 'الذاكرة العاملة وحدود الانتباه',
+          content:
+            'الذاكرة العاملة هي مساحة العمل الذهنية التي نحتفظ فيها بالمعلومة أثناء معالجتها. سعتها محدودة، ولهذا يشعر المتعلّم الذي يقرأ صفحة كاملة دون توقّف أنه نسِي بدايتها.\n\nتمرين عملي: اقرأ فقرة واحدة، ثم أغلق المصدر واكتب فكرتها الأساسية بجملتك. كرّر ذلك ثلاث مرات. ستلاحظ أن الفهم يتحسّن لأنك تفرّغ مساحة العمل بدلًا من تكديس المعلومات.\n\nالقاعدة الأولى: لا تدرس وأنت تستخدم أكثر من مصدر واحد في الوقت نفسه.',
+          estimatedMinutes: 6,
+        },
+        {
+          title: 'الفهم قبل الحفظ',
+          content:
+            'الحفظ دون فهم ينتج معرفة هشّة تتبخّر بعد الامتحان. الفهم يبني روابط بين المعلومة الجديدة وما تعرفه سابقًا، فتسهل استعادتها لاحقًا.\n\nتمرين عملي: بعد كل مفهوم جديد، اسأل نفسك: ما المشكلة التي يحلّها؟ وما مثال من حياتي يشبهه؟ اكتب إجابتك في دفتر واحد مخصّص للأسئلة.\n\nالأسئلة الجيدة أهم من إعادة القراءة.',
+          estimatedMinutes: 7,
+        },
+      ],
+    },
+    {
+      title: 'بناء عادة المراجعة',
+      summary: 'كيف نجعل المراجعة جزءًا من الأسبوع لا حدثًا موسميًا.',
+      lessons: [
+        {
+          title: 'المراجعة المتباعدة في عشر دقائق',
+          content:
+            'المراجعة المتباعدة تعني إعادة زيارة المادة بعد فواصل زمنية متزايدة: بعد يوم، ثم بعد ثلاثة أيام، ثم بعد أسبوع. هذا يجعل الاستدعاء أصعب قليلًا، وهو بالضبط ما يقوّي الذاكرة.\n\nخطة عشر دقائق:\n١. دقيقتان: اكتب من الذاكرة كل ما تذكره من الدرس.\n٢. ثلاث دقائق: افتح المصدر وصحّح الفجوات.\n٣. خمس دقائق: اشرح الفكرة لشخص آخر أو لنفسك بصوت مسموع.\n\nكرّر الخطة ثلاث مرات في الأسبوع الأول، وسجّل ما نسِيته في قائمة واحدة.',
+          estimatedMinutes: 8,
+        },
+      ],
+    },
+  ] satisfies SeedModule[],
+}
+
+const demoPublication = {
+  slug: 'letters-to-a-new-teacher',
+  author: 'sara@bunyan.local',
+  title: 'رسائل إلى معلّم جديد',
+  summary: 'سلسلة رسائل صادقة عن أول سنة في التعليم: الخوف، والتصميم، والعلاقة التي تصنع الفرق.',
+  description:
+    'هذه سلسلة مقالات متسلسلة موجهة للمعلّمين في بداية طريقهم. كل فصل رسالة قصيرة يمكن قراءتها في جلسة واحدة، وتنتهي بسؤال للتأمل. الفصول تُنشر تدريجيًا، ويُحفظ موضع القراءة تلقائيًا للمستخدمين المسجّلين.',
+  topic: 'professional' as const,
+  chapters: [
+    {
+      title: 'الرسالة الأولى: قبل أن تدخل الصف',
+      status: 'published' as const,
+      content:
+        'عزيزي المعلّم الجديد،\n\nقبل أن تدخل الصف، تذكّر أنك لا تحتاج إلى أن تعرف كل شيء. الطلاب لا ينتظرون منك موسوعة متنقّلة، بل ينتظرون شخصًا يهتم، ويشرح بصدق، ويعترف حين لا يعرف.\n\nفي أول يوم، ابدأ بسؤال واحد: ماذا تريد أن تتذكّر عن هذه السنة بعد عشر سنوات؟ اكتب جوابك، وضعه في مكان تراه كل صباح.\n\nسؤال للتأمل: ما الذي يخيفني في التدريس؟ وما الجزء الذي أستطيع التحكّم فيه من هذا الخوف؟',
+    },
+    {
+      title: 'الرسالة الثانية: خطة الدرس ليست سيناريو',
+      status: 'published' as const,
+      content:
+        'الخطة الجيدة تشبه خريطة، لا سيناريو مسرحية. تحتاج إلى هدف واضح، ونقطة بداية، وطريقين على الأقل للوصول.\n\nاكتب هدف الدرس بجملة واحدة تبدأ بـ«سيستطيع الطالب أن…». ثم صمّم نشاطًا واحدًا يختبر هذا الهدف. إن لم ينجح النشاط، فالمشكلة في التصميم غالبًا، لا في الطلاب.\n\nسؤال للتأمل: لو اختصرت الدرس إلى نشاط واحد، ماذا سيكون؟',
+    },
+    {
+      title: 'الرسالة الثالثة: التقييم الذي لا يخيف',
+      status: 'draft' as const,
+      content:
+        'هذا فصل قيد الكتابة. سيُنشر عندما يصبح جاهزًا، ولن يظهر للقرّاء قبل ذلك.\n\nالفكرة الأساسية: التقييم أداة تعلّم، لا حكم نهائي على الطالب.',
+    },
+  ],
+}
+
 async function main() {
   await connectToDatabase()
   const passwordHash = await hashPassword(DEMO_PASSWORD)
@@ -241,6 +331,100 @@ async function main() {
       { upsert: true, setDefaultsOnInsert: true },
     )
   }
+
+  // Demo learning content: one published path with three lessons and one serialized publication.
+  const authorId = userIdByEmail.get(demoCourse.author)
+  if (!authorId) throw new Error(`Missing seed author ${demoCourse.author}`)
+  const course = await CourseModel.findOneAndUpdate(
+    { slug: demoCourse.slug },
+    {
+      $set: {
+        authorId,
+        title: demoCourse.title,
+        summary: demoCourse.summary,
+        description: demoCourse.description,
+        topic: demoCourse.topic,
+        language: 'ar',
+        level: demoCourse.level,
+        status: 'published',
+        publishedAt: new Date(),
+      },
+    },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+  )
+    .select('_id')
+    .lean<{ _id: Types.ObjectId } | null>()
+  if (!course) throw new Error('Failed to seed demo course')
+
+  let lessonCount = 0
+  for (const [moduleIndex, moduleSeed] of demoCourse.modules.entries()) {
+    const courseModule = await CourseModuleModel.findOneAndUpdate(
+      { courseId: course._id, position: moduleIndex },
+      { $set: { title: moduleSeed.title, summary: moduleSeed.summary } },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+    )
+      .select('_id')
+      .lean<{ _id: Types.ObjectId } | null>()
+    if (!courseModule) throw new Error(`Failed to seed module ${moduleSeed.title}`)
+
+    for (const [lessonIndex, lessonSeed] of moduleSeed.lessons.entries()) {
+      await LessonModel.findOneAndUpdate(
+        { moduleId: courseModule._id, position: lessonIndex },
+        {
+          $set: {
+            courseId: course._id,
+            title: lessonSeed.title,
+            content: lessonSeed.content,
+            estimatedMinutes: lessonSeed.estimatedMinutes,
+          },
+        },
+        { upsert: true, setDefaultsOnInsert: true },
+      )
+      lessonCount += 1
+    }
+  }
+  await CourseModel.updateOne({ _id: course._id }, { $set: { lessonCount } })
+
+  const publication = await PublicationModel.findOneAndUpdate(
+    { slug: demoPublication.slug },
+    {
+      $set: {
+        authorId,
+        title: demoPublication.title,
+        summary: demoPublication.summary,
+        description: demoPublication.description,
+        topic: demoPublication.topic,
+        language: 'ar',
+        status: 'published',
+        publishedAt: new Date(),
+      },
+    },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+  )
+    .select('_id')
+    .lean<{ _id: Types.ObjectId } | null>()
+  if (!publication) throw new Error('Failed to seed demo publication')
+
+  let chapterCount = 0
+  for (const [chapterIndex, chapterSeed] of demoPublication.chapters.entries()) {
+    await ChapterModel.findOneAndUpdate(
+      { publicationId: publication._id, position: chapterIndex },
+      {
+        $set: {
+          title: chapterSeed.title,
+          content: chapterSeed.content,
+          status: chapterSeed.status,
+          ...(chapterSeed.status === 'published' ? { publishedAt: new Date() } : {}),
+        },
+        ...(chapterSeed.status === 'draft' ? { $unset: { publishedAt: '' } } : {}),
+      },
+      { upsert: true, setDefaultsOnInsert: true },
+    )
+    if (chapterSeed.status === 'published') chapterCount += 1
+  }
+  await PublicationModel.updateOne({ _id: publication._id }, { $set: { chapterCount } })
+  console.log(`  course ${demoCourse.slug}: ${lessonCount} lessons`)
+  console.log(`  publication ${demoPublication.slug}: ${chapterCount} published chapters`)
 
   // Recompute denormalised counters so repeated runs never inflate them.
   for (const [slug, communityId] of communityIdBySlug) {

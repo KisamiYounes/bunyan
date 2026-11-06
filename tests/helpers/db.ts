@@ -12,6 +12,16 @@ import { PostLikeModel } from '@/modules/communities/post-like.model'
 import { XpEventModel } from '@/modules/gamification/xp-event.model'
 import { ReportModel } from '@/modules/admin/report.model'
 import { AuditLogModel } from '@/modules/admin/audit-log.model'
+import { CourseModel } from '@/modules/learning/course.model'
+import { CourseModuleModel } from '@/modules/learning/course-module.model'
+import { LessonModel } from '@/modules/learning/lesson.model'
+import { EnrollmentModel } from '@/modules/learning/enrollment.model'
+import { LessonProgressModel } from '@/modules/learning/lesson-progress.model'
+import { PublicationModel } from '@/modules/learning/publication.model'
+import { ChapterModel } from '@/modules/learning/chapter.model'
+import { ReadingProgressModel } from '@/modules/learning/reading-progress.model'
+import { BookmarkModel } from '@/modules/library/bookmark.model'
+import { FollowModel } from '@/modules/library/follow.model'
 
 export const TEST_PASSWORD = 'TestPassword!2026'
 
@@ -40,6 +50,16 @@ export function setupTestDatabase(): void {
       XpEventModel.init(),
       ReportModel.init(),
       AuditLogModel.init(),
+      CourseModel.init(),
+      CourseModuleModel.init(),
+      LessonModel.init(),
+      EnrollmentModel.init(),
+      LessonProgressModel.init(),
+      PublicationModel.init(),
+      ChapterModel.init(),
+      ReadingProgressModel.init(),
+      BookmarkModel.init(),
+      FollowModel.init(),
     ])
   }, 180_000)
 

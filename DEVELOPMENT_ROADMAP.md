@@ -3,7 +3,7 @@
 Each phase must end with a working, tested slice of the educational cycle — not a folder of
 unfinished modules. A phase is complete only when its gate criteria pass.
 
-## Phase 1 — Core Foundation (current)
+## Phase 1 — Core Foundation (complete)
 
 **Goal:** an Arabic-first platform where people can create accounts, build profiles, and run
 learning communities with real discussion.
@@ -28,20 +28,37 @@ non-members; teal/role escalation attempts fail; RTL renders correctly; `npm run
 **Deferred but designed:** per-device sessions, email verification, password reset, OAuth,
 avatar uploads, full-text search, notifications.
 
-## Phase 2 — Learning, Library, Creator Studio
+## Phase 2 — Learning, Library, Creator Studio (complete)
 
-- Courses → modules → lessons; lesson completion and progress.
-- Learning pathways referencing courses, publications, projects and assessments.
-- Publications as series of chapters; drafts, preview, publish, revisions.
-- Reading progress, bookmarks, follows, library discovery.
-- Creator Studio authoring surface with autosave.
-- Search (indexed text first, Atlas Search later) and notifications.
-- Email verification, password reset, notification preferences.
+**Goal:** an educator can publish structured learning content, and a learner can study it and
+resume reading exactly where they stopped.
+
+Delivered scope:
+
+- [x] Courses → modules → lessons with ordering, estimated duration and metadata.
+- [x] Course enrollment, lesson completion, resumable course progress and completion state.
+- [x] Lesson completion XP with the existing unique-event anti-replay ledger.
+- [x] Publications with independently drafted/published chapters and a serialized reader.
+- [x] Reading progress storing the last chapter and scroll fraction, restored by the reader.
+- [x] Library aggregation for enrolled courses, reading positions, bookmarks and follows.
+- [x] Bookmarks and follows for users, courses and publications.
+- [x] Cross-content search for published courses, publications and public communities.
+- [x] Creator Studio: course settings, curriculum editor, publication settings, chapter editor,
+      publish/archive controls, and ownership checks on every mutation.
+- [x] Draft isolation: unpublished courses, publications and chapters never reach readers.
+- [x] Unit and integration tests, including a 10-test Phase 2 integration suite.
+- [x] Seeded demo course and serialized publication.
 
 **Gate:** an educator publishes a course with 3+ lessons and a serialized publication; a learner
-completes lessons and resumes reading at the exact position; drafts never leak.
+completes lessons and resumes reading at the exact position; drafts never leak. Verified by
+`tests/integration/learning.test.ts`, the idempotent seed, the production build and a runtime smoke
+test (see `DEVELOPMENT_STATUS.md`).
 
-## Phase 3 — Practice, Assessment, Credentials
+**Deferred from the original Phase 2 scope:** learning pathways, autosave, revision history,
+notifications, email verification, password reset and notification preferences. Search shipped as
+regex substring matching, not an indexed text engine.
+
+## Phase 3 — Practice, Assessment, Credentials (next)
 
 - Assignments, projects, submissions and rubric-based reviews.
 - Portfolios assembled from verified artefacts.
@@ -85,15 +102,15 @@ another.
 
 ## Cross-cutting workstreams
 
-| Stream        | Phase 1                        | Later                                           |
-| ------------- | ------------------------------ | ----------------------------------------------- |
-| Accessibility | WCAG AA basics, keyboard forms | audit + screen-reader testing                   |
-| Performance   | indexes, bounded queries, RSC  | caching layer, CDN media                        |
-| Observability | structured logger              | tracing, metrics, alerts                        |
-| Security      | authz, rate limit, headers     | pen-test, secret rotation, CSP tighten          |
-| Safeguarding  | age bands, teen limits         | guardian accounts, verification, safe messaging |
-| Content ops   | report queue                   | appeals, moderation SLAs                        |
-| DevOps        | local dev DB, seed, CI scripts | staging, backups, migrations runbook            |
+| Stream        | Phases 1–2                                         | Later                                           |
+| ------------- | -------------------------------------------------- | ----------------------------------------------- |
+| Accessibility | WCAG AA basics, keyboard forms, logical properties | audit + screen-reader testing                   |
+| Performance   | indexes, bounded queries, RSC                      | caching layer, CDN media                        |
+| Observability | structured logger                                  | tracing, metrics, alerts                        |
+| Security      | authz, rate limit, headers, draft isolation        | pen-test, secret rotation, CSP tighten          |
+| Safeguarding  | age bands, teen limits, adult-only authoring       | guardian accounts, verification, safe messaging |
+| Content ops   | report queue, draft/publish workflow               | appeals, moderation SLAs                        |
+| DevOps        | local dev DB, seed, CI scripts                     | staging, backups, migrations runbook            |
 
 ## Working rules
 

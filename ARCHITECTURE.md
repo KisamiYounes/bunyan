@@ -27,20 +27,33 @@ Browser
 src/
   app/
     [locale]/
-      (public)/            landing, discover, public profiles
       (auth)/              login, register
-      (dashboard)/         dashboard, settings, admin
+      admin/               admin overview, users, communities, reports
       communities/         list, create, detail, post detail
-    api/                   auth, communities, posts, moderation
+      courses/             catalogue, detail, lesson reader
+      publications/        catalogue, detail, chapter reader
+      library/             enrolled courses, reading, bookmarks, follows
+      search/              cross-content search results
+      studio/              course and publication authoring
+      dashboard/           learner dashboard
+      settings/            profile and password settings
+      u/[username]/        public profile
+    api/                   auth, communities, posts, moderation, courses,
+                           modules, lessons, publications, chapters,
+                           enrollments, progress, bookmarks, follows, search
     globals.css
   modules/
     identity/              users, sessions, passwords, RBAC, safeguards
     communities/           communities, memberships, posts, comments, likes
     gamification/          XP events, levels, leaderboard queries
     admin/                 moderation + statistics services
+    learning/              courses, modules, lessons, enrollment,
+                           publications, chapters, reading progress
+    library/               bookmarks, follows, library aggregation, search
   components/
     ui/                    design-system primitives (shadcn-style)
     shared/                app-level composed components
+    learning/              course/publication editors and action buttons
     layouts/               header, sidebar, shells
   infrastructure/
     database/              Mongoose connection + model registration
@@ -54,6 +67,7 @@ src/
     config.ts
     messages/{ar,en,fr}.json
   styles/
+  proxy.ts                 locale resolution + edge session verification
 tests/
   unit/ integration/ e2e/
 docs/ (this file lives at repo root per the specification)
@@ -109,9 +123,27 @@ Rules:
   membership row.
 - Admin routes require `role === 'admin'`; client-side hiding is UX only.
 
-Academies (Phase 3) will add an `AcademyMembership` with organization roles and a `tenantId` on
+Learning and library resources add an **ownership** layer on top of the platform role:
+
+| Action                                | Anonymous | Learner | Enrolled learner | Author | Admin |
+| ------------------------------------- | --------- | ------- | ---------------- | ------ | ----- |
+| Browse published courses/publications | ✓         | ✓       | ✓                | ✓      | ✓     |
+| Read lesson body                      | ✗         | ✗       | ✓                | ✓      | ✓     |
+| Read published chapter                | ✓         | ✓       | ✓                | ✓      | ✓     |
+| Read draft course/publication/chapter | ✗         | ✗       | ✗                | ✓      | ✓     |
+| Enroll / complete a lesson            | ✗         | ✓\*     | —                | —      | —     |
+| Create or edit learning content       | ✗         | ✗       | ✗                | ✓      | ✓     |
+| Bookmark or follow                    | ✗         | ✓       | ✓                | ✓      | ✓     |
+
+\* Consented teens may enroll and complete lessons; unconsented teens receive `GUARDIAN_REQUIRED`.
+Authoring is restricted to active **adult** `educator` or `admin` accounts. Course and publication
+ownership is `authorId`; there is no tenant key for a caller to spoof. A draft resource returns
+“not found” to everyone except its author and platform admins.
+
+Academies (Phase 4) will add an `AcademyMembership` with organization roles and a `tenantId` on
 owned resources. The current Community model already carries optional `academyId` so the
-relationship can be introduced without migration.
+relationship can be introduced without migration. Courses and publications are intentionally
+standalone author-owned resources in Phase 2 and are not scoped to a community or academy.
 
 ## 6. Multi-tenancy
 
@@ -121,6 +153,11 @@ relationship can be introduced without migration.
 - Compound indexes lead with tenant keys (`{ communityId: 1, createdAt: -1 }`).
 - Unique constraints are tenant-scoped where appropriate (`{ communityId, userId }`).
 - `memberCount`/`postCount` are denormalized counters updated atomically, not unbounded arrays.
+- Courses, publications, chapters and learning progress are author/user-owned rather than
+  tenant-owned. Their read filters use `status` plus `authorId`/`userId`, and draft records are only
+  returned to the author or an admin.
+- Every list query is explicitly paginated or bounded (`limit ≤ 100` for studio/library lists,
+  `limit ≤ 50` for public catalogues).
 
 ## 7. Scalability posture
 
@@ -147,10 +184,14 @@ No Redis, broker or paid service is introduced without a measured need.
 
 ## 9. Rendering and caching
 
-- Public marketing pages: statically rendered per locale.
-- Authenticated pages: dynamic (`force-dynamic`) because they read the session cookie.
-- No sensitive response is cached at the CDN.
-- Mutations call `revalidatePath` only for affected public routes.
+- The locale root layout is dynamic (`force-dynamic`) because the header reads the session and the
+  database-backed content changes without a rebuild.
+- Public and authenticated pages therefore render per request; there is no stale build-time content
+  and no sensitive response is cached at the CDN.
+- Mutations return JSON and the client calls `router.refresh()`; no broad cache invalidation is
+  required.
+- If public catalogues need CDN caching later, it must be added together with explicit invalidation
+  on publish/archive mutations.
 
 ## 10. Definition of done for a module
 

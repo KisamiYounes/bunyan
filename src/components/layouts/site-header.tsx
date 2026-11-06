@@ -3,6 +3,7 @@ import { LogIn, UserPlus } from 'lucide-react'
 import type { Dictionary } from '@/i18n/dictionaries'
 import type { Locale } from '@/i18n/config'
 import type { SessionUser } from '@/modules/identity/dto'
+import { canAuthorLearning } from '@/modules/identity/authorization'
 import { ThemeToggle } from './theme-toggle'
 import { LanguageSwitcher } from './language-switcher'
 import { UserMenu } from './user-menu'
@@ -18,6 +19,11 @@ export function SiteHeader({
 }) {
   const nav = [
     { href: `/${locale}/communities`, label: dict.nav.communities },
+    { href: `/${locale}/courses`, label: dict.nav.courses },
+    { href: `/${locale}/publications`, label: dict.nav.publications },
+    { href: `/${locale}/search`, label: dict.common.search },
+    ...(user ? [{ href: `/${locale}/library`, label: dict.nav.library }] : []),
+    ...(canAuthorLearning(user) ? [{ href: `/${locale}/studio`, label: dict.nav.studio }] : []),
     ...(user ? [{ href: `/${locale}/dashboard`, label: dict.nav.dashboard }] : []),
     ...(user?.role === 'admin' ? [{ href: `/${locale}/admin`, label: dict.nav.admin }] : []),
   ]

@@ -8,7 +8,7 @@ authorization control.
 - Account credentials and sessions.
 - Private community content and membership lists.
 - Minors' identity, age band and activity.
-- Draft publications and unpublished learning material (Phase 2).
+- Draft courses, draft publications and unpublished chapters (implemented in Phase 2).
 - Assessment evidence and credentials (Phase 3).
 - Administrative audit trail.
 
@@ -21,7 +21,7 @@ authorization control.
 | CSRF                    | SameSite cookie + `Origin`/`Host` check on every mutating request                                            |
 | IDOR / tenant escape    | Every query filtered by tenant key and membership; service-level guards                                      |
 | Privilege escalation    | Role read from DB user, never from token claims alone; community role loaded from membership                 |
-| XSS                     | React escaping; no `dangerouslySetInnerHTML` in Phase 1; strict CSP headers                                  |
+| XSS                     | React escaping; no `dangerouslySetInnerHTML` in Phases 1–2; plain-text learning content; strict CSP headers  |
 | NoSQL injection         | Zod-typed inputs; no raw object spread into queries; Mongoose casting                                        |
 | Brute-force enumeration | Uniform responses, rate limits, no user-existence disclosure                                                 |
 | Spam / XP farming       | Rate limits, unique XP event keys, no XP for trivial actions                                                 |
@@ -72,12 +72,43 @@ Community permissions:
 
 Platform admin can moderate any resource, and every admin action is audited.
 
+Learning and library permissions:
+
+| Action                              | Anonymous | Learner | Enrolled learner | Author | Admin |
+| ----------------------------------- | --------- | ------- | ---------------- | ------ | ----- |
+| View published course/publication   | ✓         | ✓       | ✓                | ✓      | ✓     |
+| View draft course/publication       | ✗         | ✗       | ✗                | ✓      | ✓     |
+| Read lesson body                    | ✗         | ✗       | ✓                | ✓      | ✓     |
+| Read published chapter              | ✓         | ✓       | ✓                | ✓      | ✓     |
+| Read draft chapter                  | ✗         | ✗       | ✗                | ✓      | ✓     |
+| Enroll / complete lesson            | ✗         | ✓\*     | —                | —      | —     |
+| Create/edit/publish/archive content | ✗         | ✗       | ✗                | ✓      | ✓     |
+| Bookmark / follow                   | ✗         | ✓       | ✓                | ✓      | ✓     |
+| Save reading progress               | ✗         | ✓       | ✓                | ✓      | ✓     |
+
+\* Consented teens may enroll and complete lessons; unconsented teens receive `GUARDIAN_REQUIRED`.
+
+Additional rules:
+
+- Authoring requires an active **adult** `educator` or `admin` account. The check runs in the service
+  layer for every create/update/publish/archive call, not only in the Studio UI.
+- Draft course/publication reads are rejected before content is assembled, and the page renders a
+  404 for non-authors. Draft chapters and draft bookmark targets return not-found errors, so IDs do
+  not confirm existence.
+- Draft chapters are excluded from reader table-of-contents queries and from chapter-body queries.
+  Reading progress cannot be saved against a draft chapter by a non-author.
+- Enrollment is unique per `(user, course)`; the unique index prevents concurrent double enrollment.
+- Lesson completion is unique per `(user, lesson)`; replaying it awards no additional XP.
+- Courses and publications are author-owned, not community-owned. There is no tenant key for a
+  caller to forge, and no cross-community membership check applies.
+
 ## 5. Input and output
 
 - Zod schemas at every boundary (route handlers and server actions). Reject unknown keys.
 - Length limits on every string; bounded page sizes for lists.
 - ObjectIds validated before use.
-- Markdown/rich text is **not** rendered as HTML in Phase 1. Future rich text must be sanitized
+- Markdown/rich text is **not** rendered as HTML in Phases 1–2. Posts, lessons and chapters are
+  displayed as escaped plain text with preserved line breaks. Future rich text must be sanitized
   server-side with a strict allowlist (e.g. DOMPurify + sanitize-html) before storage/display.
 - User-supplied URLs are validated (`http`/`https` only) before rendering; `javascript:` rejected.
 - Error responses never include stack traces, queries or secrets.
@@ -96,14 +127,17 @@ Platform admin can moderate any resource, and every admin action is audited.
 MVP adapter: in-memory fixed window (`src/infrastructure/rate-limit`). It is honest about its
 limits: per-instance only. The interface is async so a Redis adapter can replace it in production.
 
-| Endpoint       | Limit                                |
-| -------------- | ------------------------------------ |
-| Register       | 5 / hour / IP                        |
-| Login          | 10 / 15 min / IP; 5 / 15 min / email |
-| Create post    | 10 / 10 min / user                   |
-| Create comment | 20 / 10 min / user                   |
-| Report content | 10 / hour / user                     |
-| Join/leave     | 30 / hour / user                     |
+| Endpoint                                          | Limit                                |
+| ------------------------------------------------- | ------------------------------------ |
+| Register                                          | 5 / hour / IP                        |
+| Login                                             | 10 / 15 min / IP; 5 / 15 min / email |
+| Create post                                       | 10 / 10 min / user                   |
+| Create comment                                    | 20 / 10 min / user                   |
+| Report content                                    | 10 / hour / user                     |
+| Join/leave                                        | 30 / hour / user                     |
+| Create/edit/publish course or publication content | 40 / hour / user                     |
+| Complete lesson / save reading progress           | 240 / 10 min / user                  |
+| Bookmark / follow                                 | 120 / 10 min / user                  |
 
 Responses use HTTP 429 with `Retry-After`.
 
@@ -118,19 +152,20 @@ report resolution. Immutable from the app; admin-readable only. IP is hashed wit
 Age bands are derived server-side from `birthYear` at registration and never trusted from the
 client afterwards.
 
-| Band      | Definition   | Phase 1 policy                                                                                                                                         |
-| --------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `child`   | under 13     | Self-registration refused. Guardian-managed accounts only (Phase 2)                                                                                    |
-| `teen`    | 13–17        | May register; social participation requires guardian consent; cannot create communities, cannot hold moderator/owner roles, profile limited to members |
-| `adult`   | 18+          | Standard permissions                                                                                                                                   |
-| `unknown` | not provided | Treated as adult for public browsing, but blocked from age-sensitive actions until declared                                                            |
+| Band      | Definition   | Current policy                                                                                                                                                                                                  |
+| --------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `child`   | under 13     | Self-registration refused. Guardian-managed accounts are not built yet.                                                                                                                                         |
+| `teen`    | 13–17        | May register; enroll/complete lessons, join, post, comment and like require guardian consent; cannot create communities, author courses/publications, or hold moderator/owner roles; profile limited to members |
+| `adult`   | 18+          | Standard permissions; active adult educators/admins may author learning content                                                                                                                                 |
+| `unknown` | not provided | Treated as adult for public browsing, but blocked from age-sensitive actions until declared                                                                                                                     |
 
 Additional rules:
 
-- No 1:1 direct messaging in Phase 1 (feature not built). Public community discussion only.
+- No 1:1 direct messaging in Phases 1–2 (feature not built). Public community discussion only.
 - Minors are excluded from public leaderboards and from being displayed as "top contributors"
   until guardian consent + a dedicated safe mode exist.
-- Educator/mentor roles involving minors require verification (Phase 2 workflow).
+- Educator/mentor roles involving minors require a future verification workflow; it is not built.
+  Learning authoring is currently limited to adults.
 - Reports involving minors are prioritized in the admin queue.
 - Data minimisation: store `birthYear`, not full date of birth; never display it.
 - Account deletion and guardian requests are handled through a documented support process.
@@ -153,6 +188,6 @@ Additional rules:
 ## 12. Incident readiness
 
 - Structured logs with request id, user id (not email), route, status, duration.
-- Errors aggregated (Phase 2) and alerted on spike.
+- Error aggregation and alerting are not built yet; they are planned for a later phase.
 - Backup + restore drill documented before public launch.
 - Security review checklist completed before each phase release.

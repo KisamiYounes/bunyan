@@ -29,3 +29,13 @@ export function assertCanCreateCommunity(user: SessionUser): void {
 export function isAdmin(user: SessionUser | null | undefined): boolean {
   return Boolean(user && user.role === 'admin' && user.status === 'active')
 }
+
+/** Learning content authoring mirrors the server rule: active adult educator or admin. */
+export function canAuthorLearning(user: SessionUser | null | undefined): boolean {
+  return Boolean(
+    user &&
+    user.status === 'active' &&
+    user.ageBand === 'adult' &&
+    (user.role === 'educator' || user.role === 'admin'),
+  )
+}
