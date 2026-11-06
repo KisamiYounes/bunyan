@@ -1,0 +1,134 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #faf8f3;
+  --foreground: #17201f;
+  --surface: #ffffff;
+  --surface-muted: #f1ede4;
+  --muted-foreground: #5c6663;
+  --primary: #0e5c57;
+  --primary-foreground: #f7fbfa;
+  --accent: #b98a4b;
+  --accent-foreground: #241a0d;
+  --border: #dcd6c9;
+  --ring: #0e5c57;
+  --danger: #a63a34;
+  --danger-foreground: #fff8f7;
+  --success: #2f6b4f;
+  --success-foreground: #f4fbf7;
+  --warning: #b07a2a;
+  --warning-foreground: #fffaf0;
+}
+
+.dark {
+  --background: #0d1413;
+  --foreground: #ecf1ef;
+  --surface: #141d1c;
+  --surface-muted: #1b2625;
+  --muted-foreground: #9aa8a4;
+  --primary: #6fbfb4;
+  --primary-foreground: #06201d;
+  --accent: #d3a96b;
+  --accent-foreground: #23190b;
+  --border: #2a3735;
+  --ring: #6fbfb4;
+  --danger: #e07a72;
+  --danger-foreground: #2a0d0b;
+  --success: #7cc49b;
+  --success-foreground: #062015;
+  --warning: #e0b36a;
+  --warning-foreground: #2a1e08;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --font-sans:
+    'IBM Plex Sans Arabic', 'Cairo', 'Segoe UI', system-ui, -apple-system, 'Noto Sans Arabic',
+    sans-serif;
+  --font-serif: 'Amiri', 'Noto Naskh Arabic', 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-sm: 0 1px 2px rgb(23 32 31 / 0.06);
+  --shadow-md: 0 8px 24px -12px rgb(23 32 31 / 0.18);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.75;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :lang(ar) body {
+    line-height: 1.85;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.25;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 24%, transparent);
+  }
+
+  [dir='rtl'] .rtl-flip {
+    transform: scaleX(-1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
